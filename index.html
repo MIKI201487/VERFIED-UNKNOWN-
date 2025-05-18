@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAX DENSITY OPERATIONS INTERFACE</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000000;
+            color: #00FF41; /* Bright Green */
+            font-family: 'Courier New', Courier, monospace;
+            cursor: default; /* Mouse cursor now visible */
+        }
+
+        #earthCanvasContainer {
+            position: absolute;
+            top: 1%; 
+            left: 25.5%; 
+            width: 49%; 
+            height: 28%; 
+            border: 1px solid rgba(0, 255, 65, 0.2);
+            background-color: rgba(0, 0, 0, 0.7); 
+            z-index: 5;
+        }
+        #earthCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        #earthImagePlaceholder { 
+            width: 100%;
+            height: 100%;
+            object-fit: cover; 
+            display: none; 
+            background-color: #111; 
+            border: none; 
+        }
+
+
+        .panel { 
+            position: absolute;
+            background-color: rgba(0, 15, 5, 0.8); 
+            border: 1px solid rgba(0, 255, 65, 0.4); 
+            padding: 6px; 
+            overflow-y: auto; 
+            overflow-x: hidden;
+            font-size: 9.5px; 
+            line-height: 1.15; 
+            box-shadow: 0 0 8px rgba(0, 255, 65, 0.2) inset, 0 0 4px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            color: #00FF41; 
+        }
+
+        .panel h4, .panel h5 { 
+            margin-top: 0;
+            margin-bottom: 5px;
+            color: #76FF03; 
+            border-bottom: 1px dashed rgba(0, 255, 65, 0.3);
+            padding-bottom: 3px;
+            font-size: 11px; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Panel Positioning - Densely Packed */
+        /* Left Column - 6 panels */
+        #globalLogPanel { top: 1%; left: 0.5%; width: 24%; height: 16%; } 
+        #dbExploitPanel { top: 17.5%; left: 0.5%; width: 24%; height: 16%; } 
+        #dnsSpoofPanel { top: 34%; left: 0.5%; width: 24%; height: 16%; } 
+        #northKoreaIntelPopup { top: 50.5%; left: 0.5%; width: 24%; height: 16%; }
+        #usNavyPlansPopup { top: 67%; left: 0.5%; width: 24%; height: 16%; }
+        #systemWarningPanel { top: 83.5%; left: 0.5%; width: 24%; height: 15.5%; }
+        
+        /* Center Column */
+        #auxiliaryPanel { top: 30%; left: 25.5%; width: 49%; height: 20%; font-size: 9px; }
+        #missileArsenalPopup {  top: 51%; left: 25.5%; width: 16%; height: 20%;  } 
+        #strategicNukesPopup { top: 51%; left: 42%; width: 16%; height: 20%; }  /* Adjusted left */
+        #nuclearPlantStatusPopup { top: 51%; left: 58.5%; width: 16%; height: 20%; } /* Adjusted left & width */
+        #programConsolePanel { top: 72%; left: 25.5%; width: 49%; height: 26.5%; }
+        
+        /* Right Column - 6 panels */
+        #cryptoPanel { top: 1%; right: 0.5%; width: 24%; height: 16%; } 
+        #surveillancePanel { top: 17.5%; right: 0.5%; width: 24%; height: 16%; } 
+        #systemStatusPanel { top: 34%; right: 0.5%; width: 24%; height: 16%; } 
+        #missionBriefPopup { top: 50.5%; right: 0.5%; width: 24%; height: 16%; }
+        #satelliteConnectionPopup { top: 67%; right: 0.5%; width: 24%; height: 16%; } 
+        #interceptPanel { top: 83.5%; right: 0.5%; width: 24%; height: 15.5%; }  
+
+
+        #auxiliaryPanel .aux-section { margin-bottom: 4px; padding-bottom: 2px; border-bottom: 1px dotted rgba(0,255,65,0.1); }
+        #auxiliaryPanel .aux-section:last-child { border-bottom: none; }
+        #auxiliaryPanel .aux-section h5 { margin: 0 0 2px 0; color: #00E5FF; font-size: 10px; }
+
+        /* Program Console Specific */
+        #programConsolePanel .console-output { height: calc(100% - 25px); overflow-y: auto; margin-bottom: 3px;}
+        #programConsolePanel .console-input-line { display: flex; align-items: center; height: 15px; }
+        #programConsolePanel .console-prompt { color: #76FF03; margin-right: 5px; }
+        #programConsolePanel .console-input { color: #00FF41; flex-grow: 1; background: transparent; border:none; outline:none; }
+        #programConsolePanel .console-cursor {
+            display: inline-block;
+            width: 7px; height: 12px;
+            background-color: #00FF41;
+            animation: blinkCursor 1s infinite step-end;
+            margin-left: 1px;
+        }
+        @keyframes blinkCursor { 50% { opacity: 0; } }
+
+
+        /* Progress Bar Styles */
+        .progress-bar-generic-container { width: 95%; height: 7px; background-color: rgba(0,30,0,0.5); border: 1px solid rgba(0,80,0,0.7); margin-top:2px; margin-bottom: 4px; border-radius: 1px;}
+        .progress-bar-generic-fill { height: 100%; transition: width 0.2s linear; border-radius: 0px;}
+        .progress-bar-cyan { background-color: #00BCD4; }
+        .progress-bar-purple { background-color: #AB47BC; }
+
+
+        /* Specific panel content styling */
+        #dbExploitPanel .data-row { color: #B9F6CA; } 
+        #dbExploitPanel .progress-bar { width: 0%; height: 8px; background-color: #69F0AE; margin-top: 5px; margin-bottom: 5px; transition: width 0.3s ease-out;}
+        #dbExploitPanel .stage { color: #80CBC4; margin-left: 5px;}
+        #dnsSpoofPanel .dns-entry { margin-bottom: 2px; }
+        #dnsSpoofPanel .dns-entry .domain { color: #81D4FA; } 
+        #dnsSpoofPanel .dns-entry .ip { color: #FFD54F; } 
+        #dnsSpoofPanel .dns-entry .record-type { color: #CE93D8; }
+        #cryptoPanel .hashrate { color: #4FC3F7; font-weight: bold;}
+        #cryptoPanel .shares { color: #81C784; }
+        #cryptoPanel .block-found { color: #FFF176; animation: blinkWarning 0.7s infinite; font-weight: bold; }
+        #cryptoPanel .algo { color: #FFB74D; }
+        #cryptoPanel .hw-info { font-size: 8px; color: #B0BEC5;} 
+        #surveillancePanel .cam-feed { padding: 1px; border-bottom: 1px solid rgba(0,255,65,0.08); font-size:9px; }
+        #surveillancePanel .cam-feed.active { background-color: rgba(0,255,65,0.15); color: #FFF59D; }
+        #surveillancePanel .cam-status-online { color: #81C784; }
+        #surveillancePanel .cam-status-offline { color: #E57373; }
+        #surveillancePanel .cam-status-motion { color: #FFEE58; animation: blinkWarning 0.6s infinite; }
+        #surveillancePanel .cam-image-data { font-size: 6px; color: #90A4AE; word-break: break-all; max-height: 20px; overflow:hidden; }
+        #surveillancePanel .object-detected { color: #FF8A65; font-weight: bold;}
+
+        /* Temporary Pop-up Styles (Global Alert Only) */
+        #globalAlertPanel { 
+            position: fixed; 
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 30px; font-size: 26px; font-weight: bold;
+            color: #FF1111; background-color: rgba(80, 0, 0, 0.97);
+            border: 3px solid #FF1111; border-radius: 3px;
+            text-align: center; z-index: 10000; 
+            display: none; text-shadow: 0 0 20px #FF1111, 0 0 8px #FF7777;
+            max-width: 60%;
+        }
+        
+        @keyframes blinkWarning {
+            0%, 100% { opacity: 1; text-shadow: 0 0 5px currentColor; }
+            50% { opacity: 0.6; text-shadow: none; }
+        }
+
+        .panel::-webkit-scrollbar { width: 4px; } 
+        .panel::-webkit-scrollbar-track { background: rgba(0,30,0,0.2); }
+        .panel::-webkit-scrollbar-thumb { background: rgba(0,150,30,0.25); }
+        .panel::-webkit-scrollbar-thumb:hover { background: rgba(0,200,40,0.4); }
+
+    </style>
+</head>
+<body>
+    <div id="earthCanvasContainer">
+        <canvas id="earthCanvas"></canvas>
+        <img id="earthImagePlaceholder" alt="Zoomed Target View">
+    </div>
+
+    <div id="globalLogPanel" class="panel"><h4>GLOBAL LOG</h4></div>
+    <div id="dbExploitPanel" class="panel">
+        <h4>DB EXPLOIT</h4>
+        <div id="dbExploitProgressContainer" style="width:100%; height: 8px; background-color: rgba(0,50,0,0.6); margin-bottom: 5px;">
+            <div id="dbExploitProgressBar" class="progress-bar"></div>
+        </div>
+        <div id="dbExploitContent"></div>
+    </div>
+    <div id="dnsSpoofPanel" class="panel">
+        <h4>DNS SPOOF</h4>
+        <div id="dnsPropagationProgressContainer" class="progress-bar-generic-container">
+            <div id="dnsPropagationProgressBar" class="progress-bar-generic-fill progress-bar-cyan"></div>
+        </div>
+    </div>
+    
+    <div id="cryptoPanel" class="panel"><h4>CRYPTO RIG</h4></div>
+    <div id="surveillancePanel" class="panel"><h4>SURVEILLANCE</h4></div>
+    <div id="systemStatusPanel" class="panel">
+        <h4>SYSTEM STATUS</h4>
+        <div id="quantumLinkProgressContainer" class="progress-bar-generic-container">
+            <div id="quantumLinkProgressBar" class="progress-bar-generic-fill progress-bar-purple"></div>
+        </div>
+    </div>
+    <div id="auxiliaryPanel" class="panel"><h4>AUXILIARY DATA</h4></div>
+
+    <div id="satelliteConnectionPopup" class="panel"><h5>SATCOM LINK</h5><div class="content"></div></div>
+    <div id="usNavyPlansPopup" class="panel"><h5>NAVINTEL</h5><div class="content"></div></div>
+    <div id="missionBriefPopup" class="panel"><h5>MISSION BRIEF</h5><div class="content"></div></div>
+    <div id="missileArsenalPopup" class="panel"><h5>ARSENAL STATUS</h5><div class="content"></div></div>
+    <div id="northKoreaIntelPopup" class="panel"><h5>DPRK INTEL</h5><div class="content"></div></div>
+    <div id="nuclearPlantStatusPopup" class="panel"><h5>NUCLEAR MONITOR</h5><div class="content"></div></div>
+    <div id="strategicNukesPopup" class="panel"><h5>STRATEGIC OVERVIEW</h5><div class="content"></div></div>
+    <div id="systemWarningPanel" class="panel"><h5>SYSTEM WARNINGS</h5><div class="content"></div></div> 
+    <div id="interceptPanel" class="panel"><h5>COMM INTERCEPTS</h5><div class="content"></div></div> 
+    <div id="programConsolePanel" class="panel"> <h4>PROGRAM CONSOLE</h4>
+        <div class="console-output"></div>
+        <div class="console-input-line">
+            <span class="console-prompt">&gt;</span>
+            <span class="console-input" id="consoleInput"></span>
+            <span class="console-cursor">|</span>
+        </div>
+    </div>
+
+
+    <div id="globalAlertPanel"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // --- DOM Element Cache ---
+        const earthCanvas = document.getElementById('earthCanvas');
+        const earthImagePlaceholder = document.getElementById('earthImagePlaceholder');
+        const earthCanvasContainer = document.getElementById('earthCanvasContainer'); 
+        const globalLogPanel = document.getElementById('globalLogPanel');
+        const dbExploitContent = document.getElementById('dbExploitContent'); 
+        const dbExploitProgressBar = document.getElementById('dbExploitProgressBar');
+        const dnsSpoofPanel = document.getElementById('dnsSpoofPanel');
+        const dnsPropagationProgressBar = document.getElementById('dnsPropagationProgressBar'); 
+        const cryptoPanel = document.getElementById('cryptoPanel'); 
+        const surveillancePanel = document.getElementById('surveillancePanel'); 
+        const systemStatusPanel = document.getElementById('systemStatusPanel');
+        const quantumLinkProgressBar = document.getElementById('quantumLinkProgressBar'); 
+        const auxiliaryPanel = document.getElementById('auxiliaryPanel');
+        
+        const globalAlertPanel = document.getElementById('globalAlertPanel'); 
+        const systemWarningPanel = document.getElementById('systemWarningPanel').querySelector('.content') || document.getElementById('systemWarningPanel');
+        const interceptPanel = document.getElementById('interceptPanel').querySelector('.content') || document.getElementById('interceptPanel'); 
+        const satelliteConnectionPopup = document.getElementById('satelliteConnectionPopup').querySelector('.content') || document.getElementById('satelliteConnectionPopup');
+        const usNavyPlansPopup = document.getElementById('usNavyPlansPopup').querySelector('.content') || document.getElementById('usNavyPlansPopup');
+        const missionBriefPopup = document.getElementById('missionBriefPopup').querySelector('.content') || document.getElementById('missionBriefPopup');
+        const missileArsenalPopup = document.getElementById('missileArsenalPopup').querySelector('.content') || document.getElementById('missileArsenalPopup');
+        const northKoreaIntelPopup = document.getElementById('northKoreaIntelPopup').querySelector('.content') || document.getElementById('northKoreaIntelPopup');
+        const nuclearPlantStatusPopup = document.getElementById('nuclearPlantStatusPopup').querySelector('.content') || document.getElementById('nuclearPlantStatusPopup');
+        const strategicNukesPopup = document.getElementById('strategicNukesPopup').querySelector('.content') || document.getElementById('strategicNukesPopup');
+        const programConsolePanel = document.getElementById('programConsolePanel');
+        const consoleInputDisplay = document.getElementById('consoleInput');
+        const consoleOutputDisplay = programConsolePanel.querySelector('.console-output');
+
+
+        const temporaryPopups = [globalAlertPanel]; 
+        const persistentInfoPanels = [satelliteConnectionPopup, usNavyPlansPopup, missionBriefPopup, missileArsenalPopup, northKoreaIntelPopup, nuclearPlantStatusPopup, strategicNukesPopup, systemWarningPanel, interceptPanel];
+
+
+        const MAX_LINES = 8; 
+        const PANEL_FONT_SIZE_ACTUAL = 10.5; 
+
+        // --- Helper Functions ---
+        const rInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const rFloat = (min, max) => Math.random() * (max - min) + min;
+        const rChoice = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        const timestamp = () => new Date().toISOString().slice(11,23);
+        const fakeIP = () => `${rInt(1,254)}.${rInt(0,255)}.${rInt(0,255)}.${rInt(1,254)}`;
+        const fakeDomain = () => `${rChoice(["secure","corp","internal","data","gov","mil","global","node","cluster"])}.${rChoice(["access","network","server","storage","admin","control","link"])}.${rChoice(["com","net","org","io","local","cloud","ai"])}`;
+        const rHex = (len) => Array(len).fill(0).map(() => Math.floor(Math.random()*16).toString(16)).join('');
+        
+        const commonWords = [ 
+            "kernel", "daemon", "process", "system", "network", "memory", "service", "init", "cron", "syslog",
+            "exploit", "vulnerability", "firewall", "proxy", "encrypt", "decrypt", "payload", "backdoor",
+            "rootkit", "malware", "botnet", "trojan", "phishing", "spoofing", "auth", "token", "session",
+            "node", "cluster", "API", "database", "query", "SQL", "NoSQL", "cloud", "lambda", "container",
+            "docker", "kubernetes", "git", "repository", "pipeline", "DevOps", "SecOps", "threat", "intel",
+            "cyber", "warfare", "geopolitics", "satellite", "uplink", "downlink", "protocol", "algorithm"
+        ];
+        const codeKeywords = ["if", "else", "for", "while", "function", "class", "return", "const", "let", "var", "import", "export", "try", "catch", "async", "await", "new", "delete", "void", "int", "char", "string", "bool", "float", "double", "public", "private", "protected", "static", "final", "override", "virtual", "struct", "enum", "namespace", "using", "package", "module", "yield", "break", "continue", "switch", "case", "default", "throw", "assert", "lambda", "goto"];
+
+
+        function addLine(containerElement, text, isHTML = false, atTop = true) {
+            if (!containerElement) return;
+            const line = document.createElement('div');
+            if (isHTML) line.innerHTML = text;
+            else line.textContent = text;
+
+            let referenceNode = null; 
+            const h4OrH5 = containerElement.querySelector('h4') || containerElement.querySelector('h5'); 
+
+            if (atTop) {
+                if (h4OrH5 && h4OrH5.parentNode === containerElement) { 
+                    referenceNode = h4OrH5.nextSibling; 
+                } else { 
+                    referenceNode = containerElement.firstChild; 
+                }
+            }
+
+            if (referenceNode) {
+                containerElement.insertBefore(line, referenceNode);
+            } else { 
+                containerElement.appendChild(line);
+            }
+
+            let contentLines = [];
+            containerElement.childNodes.forEach(child => {
+                if (child.nodeName === "DIV" && child !== h4OrH5) { 
+                    contentLines.push(child);
+                }
+            });
+            
+            let maxPanelLines = MAX_LINES;
+            if (persistentInfoPanels.includes(containerElement) || containerElement.id === 'dbExploitContent' || containerElement === consoleOutputDisplay) {
+                 maxPanelLines = Math.max(3, Math.floor(containerElement.clientHeight / (PANEL_FONT_SIZE_ACTUAL * 1.2)) -1 || 3); 
+                 if (containerElement === consoleOutputDisplay) maxPanelLines = 50; 
+            }
+
+
+            while (contentLines.length > maxPanelLines) {
+                let nodeToRemove;
+                if (atTop && contentLines.length > 0) { 
+                     nodeToRemove = contentLines.pop(); 
+                } else if (!atTop && contentLines.length > 0) { 
+                     nodeToRemove = contentLines.shift(); 
+                } else {
+                    break; 
+                }
+                
+                if (nodeToRemove && nodeToRemove.parentNode === containerElement) {
+                    containerElement.removeChild(nodeToRemove);
+                    contentLines = Array.from(containerElement.childNodes).filter(cn => cn.nodeName === "DIV" && cn !== h4OrH5);
+                } else {
+                    break; 
+                }
+            }
+
+            if (!atTop) containerElement.scrollTop = containerElement.scrollHeight;
+        }
+
+        // --- Three.js Earth Setup ---
+        let scene, camera, renderer, earthMesh, cloudsMesh, atmosphereMesh, activityPoints = [], cityLights = [], sceneStars = [];
+        let satellites = [];
+        let earthScanState = 'idle'; 
+        let scanStartTime = 0;
+        const scanDuration = 8000; 
+        const zoomDuration = 4000; 
+        let zoomStartTime = 0;
+        const initialCameraPosition = new THREE.Vector3(0, 2.5, 14); 
+        const zoomedCameraPosition = new THREE.Vector3(0, 0.5, 6.5); 
+        const zoomedLookAtOffset = new THREE.Vector3(0,0,-5); 
+
+        const zoomedImagePlaceholders = [
+            `https://placehold.co/800x600/0a0f0a/339933?text=SATELLITE%20IMAGERY%0AMOSCOW%20-%20KREMLIN%20GRID%0AANALYZING%20PATTERNS...`,
+            `https://placehold.co/800x600/101015/44AA44?text=SIBERIAN%20OUTPOST%207Z%0ATHERMAL%20SIGNATURES%20DETECTED%0A%20%0ACOMM%20ARRAY%20ACTIVE`,
+            `https://placehold.co/800x600/050505/228822?text=URAL%20MOUNTAINS%20FACILITY%0AENERGY%20SPIKE%20DETECTED%0A%0AUNDERGROUND%20STRUCTURE%20ANALYSIS`
+        ];
+
+        function onWindowResize() {
+            const container = document.getElementById('earthCanvasContainer');
+            if (camera && renderer && container && container.clientWidth > 0 && container.clientHeight > 0) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+        
+        function pseudoRandom(x, y, z = 0) {
+            let n = x * 31 + y * 17 + z * 23 + x*y*7 + x*z*11 + y*z*13;
+            n = (n << 13) ^ n;
+            n = (n * (n * n * 15731 + 789221) + 1376312589);
+            return (1.0 - ((n & 0x7fffffff) / 1073741824.0) + 1.0) / 2.0;
+        }
+
+        function simpleNoise(x, y, z, seed, scale = 50, octaves = 4, persistence = 0.5, lacunarity = 2.0) {
+            let total = 0;
+            let frequency = 1;
+            let amplitude = 1;
+            let maxValue = 0;
+            for (let i = 0; i < octaves; i++) {
+                total += pseudoRandom(x * frequency / scale + seed, y * frequency / scale + seed, z * frequency / scale + seed) * amplitude;
+                maxValue += amplitude;
+                amplitude *= persistence;
+                frequency *= lacunarity;
+            }
+            return total / maxValue;
+        }
+
+
+        function createEarthSurfaceTexture() {
+            const canvas = document.createElement('canvas');
+            const textureSize = 1024; 
+            canvas.width = textureSize; 
+            canvas.height = textureSize / 2;
+            const context = canvas.getContext('2d');
+
+            const waterColorDeep = `rgb(0, 40, 80)`;
+            const waterColorShallow = `rgb(10, 60, 110)`;
+            const landColors = [
+                `rgb(60, 90, 30)`,  
+                `rgb(80, 110, 40)`, 
+                `rgb(120, 100, 50)`, 
+                `rgb(150, 130, 80)`, 
+            ];
+            const mountainColor = `rgb(100, 90, 80)`; 
+            const desertColor = `rgb(200, 170, 130)`;
+            const iceCapColor = `rgb(220, 220, 240)`;
+
+            const landSeed = Math.random() * 100;
+            const mountainSeed = Math.random() * 200;
+            const desertSeed = Math.random() * 300;
+            const iceSeed = Math.random() * 400;
+
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const u = x / canvas.width; 
+                    const v = y / canvas.height; 
+
+                    const lat = (v - 0.5) * Math.PI; 
+                    const lon = u * 2 * Math.PI;    
+                    const R = 1; 
+                    const noiseX = R * Math.cos(lat) * Math.cos(lon);
+                    const noiseY = R * Math.cos(lat) * Math.sin(lon);
+                    const noiseZ = R * Math.sin(lat);
+
+                    let elevation = simpleNoise(noiseX, noiseY, noiseZ, landSeed, 0.8, 5, 0.55, 2.1); 
+
+                    const iceFactor = Math.abs(lat) / (Math.PI / 2); 
+                    let iceNoise = simpleNoise(noiseX, noiseY, noiseZ, iceSeed, 0.5, 2, 0.6);
+                    if (iceFactor > 0.75 && iceNoise > 0.5) { 
+                        elevation = Math.max(elevation, 0.65 + (iceFactor - 0.75) * 0.8); 
+                    }
+                    
+                    if (elevation > 0.5) { 
+                        let color;
+                        if (elevation > 0.8 && iceFactor > 0.7) { 
+                            color = iceCapColor;
+                        } else if (elevation > 0.70) { 
+                             let mNoise = simpleNoise(noiseX,noiseY,noiseZ, mountainSeed, 0.3, 3, 0.7);
+                             color = mNoise > 0.6 ? mountainColor : rChoice(landColors);
+                        } else if (elevation > 0.58 && Math.abs(lat) < Math.PI/4 && simpleNoise(noiseX,noiseY,noiseZ, desertSeed, 0.6, 2, 0.4) > 0.6) { 
+                            color = desertColor;
+                        }
+                        else {
+                            color = rChoice(landColors);
+                        }
+                        context.fillStyle = color;
+                    } else if (elevation > 0.47) { 
+                        context.fillStyle = waterColorShallow;
+                    } else { 
+                        context.fillStyle = waterColorDeep;
+                    }
+                    context.fillRect(x, y, 1, 1);
+                }
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+
+        function createCloudTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 512;
+            const context = canvas.getContext('2d');
+
+            context.fillStyle = 'rgba(255, 255, 255, 0)'; 
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < 350; i++) { 
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height * 0.7 + canvas.height * 0.15; 
+                const radius = Math.random() * 35 + 25;
+                const opacity = Math.random() * 0.4 + 0.25; 
+
+                const grad = context.createRadialGradient(x, y, radius * 0.1, x, y, radius);
+                grad.addColorStop(0, `rgba(230, 230, 240, ${opacity})`);
+                grad.addColorStop(0.7, `rgba(210, 210, 220, ${opacity * 0.5})`);
+                grad.addColorStop(1, `rgba(200, 200, 210, 0)`);
+                
+                context.fillStyle = grad;
+                context.beginPath();
+                context.arc(x, y, radius, 0, Math.PI * 2);
+                context.fill();
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function initEarth() {
+            if (!earthCanvas) return;
+            const container = document.getElementById('earthCanvasContainer');
+            if (!container) return; 
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000); 
+            try {
+                renderer = new THREE.WebGLRenderer({ canvas: earthCanvas, alpha: true, antialias: true });
+            } catch (e) {
+                console.error("Three.js WebGLRenderer initialization failed:", e);
+                return; 
+            }
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setClearColor(0x000000, 0); 
+
+            const earthRadius = 5;
+            const earthSurfaceTexture = createEarthSurfaceTexture();
+            earthSurfaceTexture.wrapS = THREE.RepeatWrapping; 
+            const earthGeometry = new THREE.SphereGeometry(earthRadius, 64, 64); 
+            const earthMaterial = new THREE.MeshPhongMaterial({ 
+                map: earthSurfaceTexture,
+                shininess: 10,
+                specular: 0x111111, 
+                bumpMap: earthSurfaceTexture, 
+                bumpScale: 0.03 
+            });
+            earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
+            scene.add(earthMesh);
+            
+            const cloudTexture = createCloudTexture();
+            const cloudMaterial = new THREE.MeshPhongMaterial({
+                map: cloudTexture,
+                transparent: true,
+                opacity: 0.6, 
+                depthWrite: false,
+                blending: THREE.AdditiveBlending 
+            });
+            cloudsMesh = new THREE.Mesh(new THREE.SphereGeometry(earthRadius + 0.08, 64, 64), cloudMaterial); 
+            scene.add(cloudsMesh);
+
+            const lightMaterial = new THREE.MeshBasicMaterial({ color: 0xFFD700, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+            for (let i = 0; i < 150; i++) { 
+                const lightGeometry = new THREE.SphereGeometry(rFloat(0.015, 0.04), 5, 5); 
+                const light = new THREE.Mesh(lightGeometry, lightMaterial);
+                const phi = Math.acos(-1 + (2 * Math.random()));
+                const theta = Math.random() * Math.PI * 2;
+                light.position.setFromSphericalCoords(earthRadius + 0.02, phi, theta); 
+                light.visible = false; 
+                earthMesh.add(light);
+                cityLights.push(light);
+            }
+            
+            const pointMaterial = new THREE.MeshBasicMaterial({ color: 0x00FF00, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending });
+            for (let i = 0; i < 80; i++) { 
+                const pointGeometry = new THREE.SphereGeometry(rFloat(0.02, 0.06), 8, 8);
+                const point = new THREE.Mesh(pointGeometry, pointMaterial);
+                const phi = Math.acos(-1 + (2 * Math.random())); 
+                const theta = Math.random() * Math.PI * 2;      
+                point.position.setFromSphericalCoords(earthRadius + 0.15, phi, theta); 
+                earthMesh.add(point); 
+                activityPoints.push({mesh: point, phase: Math.random() * Math.PI * 2, speed: rFloat(0.03, 0.08)});
+            }
+
+            const atmosphereMaterial = new THREE.SpriteMaterial({
+                map: new THREE.CanvasTexture(generateAtmosphereTexture()),
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                opacity: 0.5 
+            });
+            atmosphereMesh = new THREE.Sprite(atmosphereMaterial);
+            atmosphereMesh.scale.set(earthRadius * 2.2, earthRadius * 2.2, 1); 
+            earthMesh.add(atmosphereMesh); 
+
+            const starGeometry = new THREE.BufferGeometry();
+            const starVertices = [];
+            for (let i = 0; i < 700; i++) { 
+                const x = THREE.MathUtils.randFloatSpread(250); 
+                const y = THREE.MathUtils.randFloatSpread(250);
+                const z = THREE.MathUtils.randFloatSpread(250);
+                if (Math.sqrt(x*x + y*y + z*z) > 40) { 
+                    starVertices.push(x, y, z);
+                }
+            }
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            const starMaterial = new THREE.PointsMaterial({ color: 0x6688AA, size: 0.1, transparent: true, opacity: 0.4 }); 
+            sceneStars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(sceneStars);
+
+
+            const ambientLight = new THREE.AmbientLight(0x303040); 
+            scene.add(ambientLight);
+            const sunLight = new THREE.DirectionalLight(0xFFFFFA, 1.1); 
+            sunLight.position.set(20, 10, 15); 
+            scene.add(sunLight);
+
+            // Satellites and Lasers
+            const satMaterial = new THREE.MeshPhongMaterial({color: 0xAAAAFF, emissive: 0x333377, shininess: 50});
+            const laserMaterial = new THREE.MeshBasicMaterial({color: 0x00FF00, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending});
+            for (let i=0; i<3; i++) {
+                const satellite = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), satMaterial);
+                const laserGeometry = new THREE.CylinderGeometry(0.02, 0.01, earthRadius * 1.5, 8); 
+                const laser = new THREE.Mesh(laserGeometry, laserMaterial);
+                laser.visible = false; 
+                satellites.push({mesh: satellite, laser: laser, angle: (i * 2 * Math.PI / 3), orbitRadius: earthRadius + 2.5, laserPhase: Math.random() * Math.PI});
+                scene.add(satellite);
+                scene.add(laser);
+            }
+
+
+            camera.position.copy(initialCameraPosition); 
+            camera.lookAt(scene.position);
+
+            window.addEventListener('resize', onWindowResize, false); 
+            onWindowResize(); 
+        }
+
+        function generateAtmosphereTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, canvas.width / 2
+            );
+            gradient.addColorStop(0.25, 'rgba(50, 150, 255, 0.4)'); 
+            gradient.addColorStop(0.5, 'rgba(30, 100, 200, 0.2)');
+            gradient.addColorStop(1.0, 'rgba(10, 50, 100, 0)');    
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            return canvas;
+        }
+
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+
+        function animateEarth() {
+            if (earthMesh) earthMesh.rotation.y += 0.0008; 
+            if (cloudsMesh) cloudsMesh.rotation.y += 0.0004; 
+            if (sceneStars) sceneStars.rotation.y += 0.00005; 
+
+
+            activityPoints.forEach(pointData => {
+                if (pointData.mesh && pointData.mesh.material) { 
+                    pointData.phase += pointData.speed;
+                    pointData.mesh.material.opacity = 0.6 + Math.sin(pointData.phase) * 0.4; 
+                    const scaleFactor = 0.8 + Math.sin(pointData.phase * 1.2) * 0.2; 
+                    pointData.mesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                }
+            });
+
+            if (scene && scene.children.find(c => c instanceof THREE.DirectionalLight)) { 
+                const sunLight = scene.children.find(c => c instanceof THREE.DirectionalLight);
+                const sunDirection = new THREE.Vector3();
+                sunLight.getWorldDirection(sunDirection); 
+                sunDirection.negate(); 
+
+                cityLights.forEach(light => {
+                    const lightWorldPosition = new THREE.Vector3();
+                    light.getWorldPosition(lightWorldPosition); 
+                    const earthCenterToLight = lightWorldPosition.clone().sub(earthMesh.position).normalize(); 
+
+                    const dot = earthCenterToLight.dot(sunDirection); 
+                    light.visible = dot < -0.15; 
+                    if(light.visible) light.material.opacity = Math.random() * 0.5 + 0.3; 
+                });
+            }
+
+            // Satellite and Laser Animation
+            satellites.forEach(sat => {
+                sat.angle += 0.005; // Orbital speed
+                sat.mesh.position.x = sat.orbitRadius * Math.cos(sat.angle);
+                sat.mesh.position.z = sat.orbitRadius * Math.sin(sat.angle);
+                sat.mesh.position.y = sat.orbitRadius * Math.sin(sat.angle * 0.5) * 0.5; // Inclined orbit
+
+                if (earthScanState === 'scanning') {
+                    sat.laser.visible = true;
+                    sat.laser.position.copy(sat.mesh.position);
+                    sat.laser.lookAt(earthMesh.position); // Point laser towards Earth center
+                    sat.laser.translateY(earthMesh.geometry.parameters.radius * 0.75); // Position laser half way
+                    
+                    sat.laserPhase += 0.1;
+                    sat.laser.material.opacity = 0.4 + Math.sin(sat.laserPhase) * 0.3;
+                } else {
+                    sat.laser.visible = false;
+                }
+            });
+
+            // Earth Scan and Zoom Logic
+            if (earthScanState === 'idle' && frameCount > 300 && Math.random() < 0.002) { 
+                earthScanState = 'scanning';
+                scanStartTime = Date.now();
+                if (auxiliaryPanel) addLine(auxiliaryPanel, "EARTH SCAN SEQUENCE INITIATED...", false, false);
+            }
+
+            if (earthScanState === 'scanning' && (Date.now() - scanStartTime > scanDuration)) {
+                earthScanState = 'zooming';
+                zoomStartTime = Date.now();
+                if (auxiliaryPanel) addLine(auxiliaryPanel, "SCAN COMPLETE. INITIATING GEOSPATIAL ZOOM...", false, false);
+            }
+
+            if (earthScanState === 'zooming') {
+                const elapsedTime = Date.now() - zoomStartTime;
+                const progress = Math.min(elapsedTime / zoomDuration, 1);
+                const easedProgress = easeInOutCubic(progress);
+
+                camera.position.lerpVectors(initialCameraPosition, zoomedCameraPosition, easedProgress);
+                
+                const lookAtTarget = earthMesh.position.clone().add(zoomedLookAtOffset);
+                camera.lookAt(lookAtTarget);
+
+
+                if (progress >= 1) {
+                    earthScanState = 'zoomed';
+                    if (auxiliaryPanel) addLine(auxiliaryPanel, "GEOSPATIAL ZOOM: TARGET REGION ACQUIRED. DISPLAYING SAT VIEW...", false, false);
+                    if (earthCanvas) earthCanvas.style.display = 'none'; 
+                    if (earthImagePlaceholder) {
+                        earthImagePlaceholder.src = rChoice(zoomedImagePlaceholders); // Use random placeholder
+                        earthImagePlaceholder.style.display = 'block';
+                    }
+                    setTimeout(() => {
+                        earthScanState = 'idle';
+                        if (earthCanvas) earthCanvas.style.display = 'block';
+                        if (earthImagePlaceholder) earthImagePlaceholder.style.display = 'none';
+                        camera.position.copy(initialCameraPosition); 
+                        camera.lookAt(scene.position);
+                         if (auxiliaryPanel) addLine(auxiliaryPanel, "GEOSPATIAL ZOOM RESET. RESUMING GLOBAL SCAN MODE.", false, false);
+                    }, 15000); // Show zoomed view for 15 seconds
+                }
+            }
+
+
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        // --- Panel Update Functions ---
+        function updateGlobalLog() {
+            const messages = [
+                "INITIATING SECURE CONNECTION TO NODE __IP__ VIA QUANTUM_ENTANGLED_LINK...",
+                "KERNEL INTEGRITY CHECK: PASSED - HASH_SIG: __HEX_LONG__",
+                "ADAPTIVE FIREWALL RULESET UPDATED: RULE_ID __RULE_ID__ - ACTION: BLOCK TRAFFIC FROM __COUNTRY__",
+                "ENCRYPTION MODULE ONLINE: AES-256-GCM_POST_QUANTUM_HYBRID",
+                "NETWORK TRAFFIC ANOMALY DETECTED: __PROTOCOL__ ON PORT __PORT__ - SIGNATURE: __MALWARE_SIG__",
+                "MULTI-FACTOR AUTHENTICATION SUCCESSFUL: USER __USER__ VIA BIOMETRIC_SCAN_ID __HEX_SHORT__",
+                "ACCESSING RESOURCE: __TARGET_SYSTEM__ DATABASE_CLUSTER_ALPHA",
+                "SYSTEM STATUS: NOMINAL. ALL SERVICES OPERATIONAL. THREAT LEVEL: LOW",
+                "ROUTING PACKETS VIA ANONYMIZED PROXY CHAIN: __IP__ -> __IP__ -> __IP__ (TOR_EXIT_NODE)",
+                "DECOY SYSTEM ACTIVATED ON HONEYPOT_SERVER __IP__ - LOGGING ALL INTERACTIONS.",
+                "VULNERABILITY SCAN COMPLETE ON __IP_RANGE__: __NUM__ CRITICAL VULNS FOUND (__CVE_ID__)",
+                "LAUNCHING EXPLOIT MODULE __EXPLOIT_NAME__ AGAINST TARGET __TARGET_IP__"
+            ];
+            let msg = rChoice(messages);
+            msg = msg.replace(/__IP__/g, fakeIP)
+                     .replace(/__HEX_LONG__/g, rHex(32))
+                     .replace(/__RULE_ID__/g, `AR${rInt(1000,9999)}`)
+                     .replace(/__COUNTRY__/g, rChoice(["Russia", "China", "N. Korea", "Iran", "USA", "UK"]))
+                     .replace(/__PROTOCOL__/g, rChoice(["TCP", "UDP", "SCTP", "QUIC"]))
+                     .replace(/__PORT__/g, rInt(1, 65535))
+                     .replace(/__MALWARE_SIG__/g, `${rChoice(commonWords).toUpperCase()}.${rHex(6)}`)
+                     .replace(/__USER__/g, rChoice(["operator_zeta","admin_prime","root_svc_encrypted"]))
+                     .replace(/__HEX_SHORT__/g, rHex(8))
+                     .replace(/__TARGET_SYSTEM__/g, fakeDomain().toUpperCase())
+                     .replace(/__IP_RANGE__/g, `${fakeIP().split('.').slice(0,3).join('.')}.0/24`)
+                     .replace(/__NUM__/g, rInt(1,5))
+                     .replace(/__CVE_ID__/g, `CVE-${rInt(2023,2025)}-${rInt(10000,59999)}`)
+                     .replace(/__EXPLOIT_NAME__/g, `${rChoice(commonWords)}ExploitKit_v${rFloat(2,5).toFixed(1)}`)
+                     .replace(/__TARGET_IP__/g, fakeIP);
+
+            addLine(globalLogPanel, `[${timestamp()}] ${msg}`);
+        }
+
+        let dbExploitTarget = "";
+        let dbExploitProgress = 0;
+        let dbStolenDataCount = 0;
+        let dbExploitStage = "";
+        const dbStages = ["INITIALIZING_CONNECTION", "BYPASSING_WAF", "ENUMERATING_TABLES", "IDENTIFYING_INJECTION_POINT", "INJECTING_SQL_PAYLOAD", "ESCALATING_PRIVILEGES", "DUMPING_SCHEMA_INFO", "EXTRACTING_DATA_CHUNK", "COVERING_TRACKS", "DISCONNECTING"];
+
+        function startDBExploit() {
+            dbExploitTarget = `${rChoice(["USER_CREDENTIALS", "FINANCIAL_RECORDS", "ENCRYPTION_KEYS", "INTEL_ARCHIVE", "PATIENT_RECORDS_PHI", "SOURCE_CODE_PRIVATE_REPO"])}@${fakeDomain()}`;
+            dbExploitProgress = 0;
+            dbStolenDataCount = 0;
+            dbExploitStage = dbStages[0];
+            if (dbExploitProgressBar) dbExploitProgressBar.style.width = "0%";
+            if (dbExploitContent) {
+                Array.from(dbExploitContent.childNodes).forEach(child => {
+                    if (child.nodeName === "DIV") dbExploitContent.removeChild(child);
+                });
+            }
+            addLine(dbExploitContent, `TARGETING: ${dbExploitTarget}`, true, false);
+            addLine(dbExploitContent, `STAGE: <span class="stage">${dbExploitStage}</span>`, true, false);
+        }
+
+        function updateDBExploit() {
+            if (!dbExploitTarget) {
+                if (Math.random() < 0.008 && frameCount > 100) startDBExploit(); 
+                return;
+            }
+            if (dbExploitProgress < 100) {
+                dbExploitProgress += rInt(1, 3); 
+                if (dbExploitProgress > 100) dbExploitProgress = 100;
+                if (dbExploitProgressBar) dbExploitProgressBar.style.width = `${dbExploitProgress}%`;
+
+                const currentStageIndex = Math.floor((dbExploitProgress / 100) * (dbStages.length -1));
+                if (dbStages[currentStageIndex] !== dbExploitStage) {
+                    dbExploitStage = dbStages[currentStageIndex];
+                    addLine(dbExploitContent, `STAGE: <span class="stage">${dbExploitStage}</span>`, true, false);
+                }
+
+                if (dbExploitStage.includes("EXTRACTING_DATA") && Math.random() < 0.4) { 
+                    const columns = ["ID", "USERNAME", "PASSWORD_HASH_SHA512", "EMAIL_ADDRESS", "LAST_LOGIN_IP", "ACCOUNT_BALANCE_USD", "SECRET_KEY_HEX", "SSN_ENCRYPTED", "API_TOKEN_V3"];
+                    let row = "";
+                    for (let i=0; i<rInt(3,5); i++) { 
+                        row += `${rChoice(columns)}: ${rHex(rInt(12,32))} `;
+                    }
+                    addLine(dbExploitContent, `<span class="data-row">CHUNK: ${row.trim()}</span>`, true, false); 
+                    dbStolenDataCount++;
+                }
+            } else {
+                let alreadyComplete = false;
+                if (dbExploitContent) {
+                    dbExploitContent.childNodes.forEach(node => {
+                        if (node.textContent && node.textContent.includes("EXPLOITATION COMPLETE")) {
+                            alreadyComplete = true;
+                        }
+                    });
+                }
+                if (!alreadyComplete) {
+                    addLine(dbExploitContent, `STAGE: <span class="stage">${dbStages[dbStages.length-1]}</span>`, true, false);
+                    addLine(dbExploitContent, `------------------------------------`, false, false);
+                    addLine(dbExploitContent, `EXPLOITATION COMPLETE: ${dbStolenDataCount} data segments extracted from ${dbExploitTarget}.`, false, false);
+                    addLine(dbExploitContent, `LOGS SANITIZED. CONNECTION TERMINATED.`, false, false);
+                    dbExploitTarget = ""; 
+                }
+            }
+        }
+
+        let dnsPropagationValue = 0; 
+        function updateDNSSpoofing() {
+            const recordTypes = ["A", "AAAA", "MX", "CNAME", "TXT", "SRV"];
+            const actions = [
+                `PROPAGATING SPOOFED <span class="record-type">${rChoice(recordTypes)}</span> RECORD: <span class="domain">${fakeDomain()}</span> (TTL: ${rInt(60,300)}) -> <span class="ip">${fakeIP()}</span>`,
+                `CACHE POISONING ATTACK ON DNS SERVER <span class="ip">${fakeIP()}</span> IN PROGRESS... STATUS: ${rChoice(["SUCCESS_PARTIAL", "DETECTED_MITIGATING", "SUCCESS_FULL_PROPAGATION"])}`,
+                `REDIRECTING TRAFFIC FOR <span class="domain">${fakeDomain()}</span> TO PHISHING_SITE_CLUSTER_GAMMA VIA MANIPULATED <span class="record-type">${rChoice(["A","CNAME"])}</span>`,
+                `FLUSHING LOCAL DNS CACHE ON TARGET_NETWORK_SEGMENT_${rHex(1).toUpperCase()}`,
+                `MONITORING DNS QUERIES FOR <span class="domain">${rChoice(["bankofamerica","paypal","google","amazon","apple","microsoft"])}.com</span> - ANOMALIES DETECTED.`,
+                `NXDOMAIN REDIRECTION ACTIVE FOR <span class="domain">*.${fakeDomain()}</span> TO SINKHOLE <span class="ip">${fakeIP()}</span>`,
+                `OVERWRITING DNSSEC KEY FOR <span class="domain">${fakeDomain()}</span> - CHAIN OF TRUST BROKEN.`
+            ];
+            addLine(dnsSpoofPanel, `<div class="dns-entry">[${timestamp()}] ${rChoice(actions)}</div>`, true);
+            
+            if (dnsPropagationProgressBar) {
+                dnsPropagationValue += rInt(1,10);
+                if (dnsPropagationValue > 100) dnsPropagationValue = rInt(0,15); 
+                dnsPropagationProgressBar.style.width = `${dnsPropagationValue}%`;
+            }
+        }
+        
+        let totalHashes = 0;
+        let sharesAccepted = 0;
+        let sharesRejected = 0;
+        const cryptoAlgos = ["SHA256_PROGPOW_SIM", "ETHASH_SIM_V2", "XMR_RANDOMX_OPTIMIZED", "KASPA_KHEAVYHASH_FPGA", "BTC_ASICBOOST_EMU"];
+        let currentAlgo = rChoice(cryptoAlgos);
+
+        function updateCryptoMining() {
+            if (!cryptoPanel) return;
+            if (frameCount % 200 === 0) currentAlgo = rChoice(cryptoAlgos); 
+
+            const hashRate = rInt(80, 750) * 1000000; 
+            totalHashes += hashRate / 2; 
+            sharesAccepted += rInt(0,4);
+            if (Math.random() < 0.03) sharesRejected++;
+
+            let content = `<h4>MINING STATUS [${currentAlgo}]</h4>`; 
+            content += `<div>HASHRATE: <span class="hashrate">${(hashRate/1000000).toFixed(2)} MH/s</span></div>`;
+            content += `<div>TOTAL HASHES: ${(totalHashes/1000000000).toFixed(3)} GH</div>`;
+            content += `<div>SHARES: <span class="shares">${sharesAccepted} Acc</span> / ${sharesRejected} Rej</div>`;
+            content += `<div>POOL: stratum+tcp://pool.${currentAlgo.split('_')[0].toLowerCase()}.crypto-net.io:${rInt(3333,8888)}</div>`;
+            content += `<div>WORKER: rig_${rHex(5)}</div>`;
+            content += `<div class="hw-info">HW_TEMP: ${rInt(55,85)}°C | FAN_SPEED: ${rInt(40,100)}%</div>`;
+            if (frameCount % rInt(250, 750) === 0) { 
+                content += `<div class="block-found">!!! NEW BLOCK FOUND (SIMULATED) - REWARD: ${rFloat(0.01, 2.5).toFixed(4)} ${currentAlgo.split('_')[0]} !!!</div>`;
+            }
+            cryptoPanel.innerHTML = content; 
+        }
+
+        const cameraLocations = ["SERVER_RM_01A_RACK7", "HALLWAY_NORTH_B2_JUNCTION", "DATACENTER_AISLE_7_HOT", "PERIMETER_FENCE_EAST_PTZ", "CEO_OFFICE_EXT_DOOR", "LAB_3B_CLEANROOM_AIRLOCK", "LOADING_DOCK_04_BAY_2", "ROOFTOP_ANTENNA_ARRAY_SOUTH", "PARKING_GARAGE_P2_CAM03_EXIT", "LOBBY_MAIN_ENTRANCE_WIDE", "SCIF_ENTRANCE_IRIS_SCAN", "VAULT_DOOR_THERMAL_CAM"];
+        let activeCamIndex = 0;
+        let camStatuses = {};
+        cameraLocations.forEach((loc, i) => camStatuses[`CAM_${String(i+1).padStart(3,'0')}`] = "ONLINE");
+
+        function generateTinyCanvasImageData() {
+            const c = document.createElement('canvas');
+            c.width = 16; c.height = 12;
+            const ctx = c.getContext('2d');
+            for(let i=0; i<50; i++) {
+                ctx.fillStyle = `rgba(${rInt(0,100)}, ${rInt(100,255)}, ${rInt(0,100)}, ${Math.random()*0.5 + 0.2})`;
+                ctx.fillRect(Math.random()*c.width, Math.random()*c.height, rInt(1,3), rInt(1,3));
+            }
+            return c.toDataURL('image/png').substring(0, 60) + "..."; 
+        }
+
+        function updateSurveillanceFeed() {
+            if (!surveillancePanel) return;
+            if (frameCount % 80 === 0) { 
+                activeCamIndex = rInt(0, cameraLocations.length - 1);
+            }
+            if (frameCount % 40 === 0 && Math.random() < 0.15) { 
+                const camKey = rChoice(Object.keys(camStatuses));
+                camStatuses[camKey] = rChoice(["ONLINE", "OFFLINE", "MOTION_DETECTED", "RECORDING", "LOW_SIGNAL", "NIGHT_VISION_ACTIVE", "TARGET_TRACKING"]);
+            }
+
+            let content = `<h4>SURVEILLANCE NETWORK</h4>`; 
+            cameraLocations.forEach((loc, i) => {
+                const camId = `CAM_${String(i+1).padStart(3,'0')}`;
+                const status = camStatuses[camId];
+                let statusClass = "cam-status-online";
+                if (status === "OFFLINE") statusClass = "cam-status-offline";
+                else if (status.includes("MOTION") || status.includes("RECORDING") || status.includes("TRACKING")) statusClass = "cam-status-motion";
+                
+                const isActive = i === activeCamIndex;
+                content += `<div class="cam-feed ${isActive ? 'active' : ''}">`;
+                content += `${camId} [${loc.substring(0,15)}]: <span class="${statusClass}">${status}</span>`;
+                if (isActive) {
+                    content += ` :: ${rChoice(["PTZ","IR","ZOOM","TRACK"])}`;
+                    if(Math.random() < 0.4) content += `<div class="object-detected">OBJ: ${rChoice(["P","V","A"])}</div>`;
+                    // content += `<div class="cam-image-data">DATA: ${generateTinyCanvasImageData()}</div>`; 
+                }
+                content += `</div>`;
+            });
+            surveillancePanel.innerHTML = content; 
+        }
+        
+        let quantumLinkStability = 0; 
+        function updateSystemStatus() {
+            const statuses = [
+                "CPU_SYS_LOAD: __CPU__% | MEM_USED: __MEM__GB / __TOTAL_MEM__GB | SWAP: __SWAP__%",
+                "NET_THROUGHPUT: __NET_IN__ Gbps IN / __NET_OUT__ Gbps OUT | LATENCY: __LATENCY__ms",
+                "DISK_IOPS: __DISK_R__K Read / __DISK_W__K Write | QUEUE_DEPTH: __QUEUE_DEPTH__",
+                "ACTIVE_SESSIONS_VPN: __SESSIONS__ | AUTH_ATTEMPTS_FAIL: __AUTH_FAILS__/min",
+                "CRITICAL_ALERT: Unidentified process __PROC_NAME__ (PID:__PID__) consuming excessive resources!",
+                "SYSTEM_UPTIME: __UPTIME__ days, __UPTIME_H__h __UPTIME_M__m | KERNEL_VER: __KERNEL_VER__",
+                "SECURITY_SUBSYSTEM_STATUS: ALL_GREEN | THREAT_LEVEL: __THREAT_LEVEL__",
+                "QUANTUM_ENTANGLEMENT_COMMS_LINK: STABLE | BANDWIDTH: __QBIT_RATE__ Qbit/s",
+                "AI_THREAT_ANALYSIS_ENGINE: ONLINE | MODELS_UPDATED: __TIMESTAMP_SHORT__",
+                "DECENTRALIZED_STORAGE_GRID_HEALTH: __GRID_HEALTH__% | NODES_ONLINE: __NODES_ONLINE__/__TOTAL_NODES__"
+            ];
+            let statusMsg = rChoice(statuses);
+            statusMsg = statusMsg.replace(/__CPU__/g, rInt(10,85))
+                               .replace(/__MEM__/g, rFloat(8,128).toFixed(1))
+                               .replace(/__TOTAL_MEM__/g, 256)
+                               .replace(/__SWAP__/g, rInt(0,40))
+                               .replace(/__NET_IN__/g, rFloat(0.5,10).toFixed(1))
+                               .replace(/__NET_OUT__/g, rFloat(0.1,5).toFixed(1))
+                               .replace(/__LATENCY__/g, rInt(1,50))
+                               .replace(/__DISK_R__/g, rInt(10,200))
+                               .replace(/__DISK_W__/g, rInt(5,100))
+                               .replace(/__QUEUE_DEPTH__/g, rInt(0,32)) 
+                               .replace(/__SESSIONS__/g, rInt(20,500))
+                               .replace(/__AUTH_FAILS__/g, rInt(0,5)) 
+                               .replace(/__PROC_NAME__/g, `${rChoice(commonWords)}d.bin`) 
+                               .replace(/__PID__/g, rInt(1000,65535)) 
+                               .replace(/__UPTIME__/g, rInt(1,100))
+                               .replace(/__UPTIME_H__/g, rInt(0,23))
+                               .replace(/__UPTIME_M__/g, rInt(0,59))
+                               .replace(/__KERNEL_VER__/g, rChoice(["5.15.x","6.1.x","4.19.x-hardened"]))
+                               .replace(/__THREAT_LEVEL__/g, rChoice(["LOW","GUARDED","ELEVATED"]))
+                               .replace(/__QBIT_RATE__/g, rInt(100,1000))
+                               .replace(/__TIMESTAMP_SHORT__/g, timestamp().slice(0,8))
+                               .replace(/__GRID_HEALTH__/g, rInt(95,100))
+                               .replace(/__NODES_ONLINE__/g, rInt(450,500))
+                               .replace(/__TOTAL_NODES__/g, 500);
+            addLine(systemStatusPanel, `[${timestamp()}] ${statusMsg}`);
+
+            if (quantumLinkProgressBar) {
+                quantumLinkStability += rInt(-5, 5);
+                if (quantumLinkStability < 0) quantumLinkStability = 0;
+                if (quantumLinkStability > 100) quantumLinkStability = 100;
+                quantumLinkProgressBar.style.width = `${quantumLinkStability}%`;
+            }
+        }
+        
+        let threatAnalysisProgress = 0; 
+        function updateAuxiliaryPanel() {
+            if (!auxiliaryPanel) return;
+            let content = `<h4>AUXILIARY SYSTEMS MONITOR</h4>`;
+            
+            content += `<div class="aux-section"><h5>EARTH SCAN STATUS</h5>`;
+            if (earthScanState === 'idle') content += `<div>STATUS: STANDBY FOR SCAN COMMAND</div>`;
+            else if (earthScanState === 'scanning') content += `<div>STATUS: <span style="color:#FFEB3B;">GLOBAL SCAN IN PROGRESS...</span> (${Math.floor((Date.now() - scanStartTime)/1000)}s / ${scanDuration/1000}s)</div>`;
+            else if (earthScanState === 'zooming') content += `<div>STATUS: <span style="color:#00BCD4;">GEOSPATIAL ZOOM ENGAGED...</span></div>`;
+            else if (earthScanState === 'zoomed') content += `<div>STATUS: <span style="color:#81C784;">TARGET REGION ACQUIRED. DISPLAYING SAT VIEW...</span></div>`;
+            content += `</div>`;
+
+            content += `<div class="aux-section"><h5>TARGETING SYSTEM</h5>`;
+            content += `<div>Current Target: ${dbExploitTarget || "NONE_SELECTED"}</div>`;
+            content += `<div>Exploitability Score: ${dbExploitTarget ? rInt(65,95) : "N/A"}%</div>`;
+            content += `<div>Attack Vectors: ${dbExploitTarget ? rChoice(["SQLi", "RCE", "XSS_Stored", "Path_Traversal"]) : "STANDBY"}</div></div>`;
+
+            content += `<div class="aux-section"><h5>ORBITAL ASSETS</h5>`;
+            satellites.forEach((sat, i) => {
+                const signalStrength = rInt(75,99);
+                content += `<div>SAT_NODE_${String.fromCharCode(65+i)}: ${earthScanState === 'scanning' ? 'ACTIVE_SCAN' : 'ORBITAL_PATROL'} | SIG: ${signalStrength}%</div>`;
+                content += `<div class="progress-bar-generic-container" style="height:5px; margin-bottom:2px;"><div class="progress-bar-generic-fill progress-bar-cyan" style="width:${signalStrength}%;"></div></div>`;
+            });
+            content += `</div>`;
+            
+            content += `<div class="aux-section"><h5>OPERATOR STATUS</h5>`;
+            content += `<div>Agent ID: ${rChoice(["SPECTRE","GHOST","VIPER","RAVEN","ZERO"])}_${rHex(3)}</div>`;
+            content += `<div>Stealth Mode: ${rChoice(["ACTIVE","ULTRA-STEALTH","PASSIVE_OBSERVATION"])}</div>`;
+            content += `<div>Mission Objective: ${earthScanState === 'zoomed' ? 'REGIONAL_SURVEILLANCE' : rChoice(["DATA_EXFIL","SYSTEM_TAKEOVER","DISRUPTION","INTEL_GATHERING"])}</div></div>`;
+
+            content += `<div class="aux-section"><h5>THREAT INTEL ANALYSIS</h5>`;
+            threatAnalysisProgress = (threatAnalysisProgress + rInt(1,5)) % 101;
+            content += `<div>Analysis Progress: ${threatAnalysisProgress}%</div>`;
+            content += `<div class="progress-bar-generic-container"><div class="progress-bar-generic-fill progress-bar-purple" style="width:${threatAnalysisProgress}%;"></div></div>`;
+            content += `<div>New Zero-Days (24h): ${rInt(0,3)}</div>`;
+            content += `<div>Active APT Campaigns: ${rInt(2,7)}</div>`;
+            content += `<div>Global Risk Index: <span style="color:${rChoice(['#FFEB3B','#FF9800','#F44336'])}">${rFloat(5.5, 9.8).toFixed(1)}</span>/10.0</div></div>`;
+
+            auxiliaryPanel.innerHTML = content;
+        }
+
+        // --- Pop-up Management (Now only for GlobalAlert) ---
+        function showTemporaryPopup(popupElement, message, duration, isHTML = false) {
+            if (!popupElement) return;
+            
+            if (isHTML) popupElement.innerHTML = message;
+            else popupElement.textContent = message;
+            
+            popupElement.style.display = 'block';
+            setTimeout(() => { if(popupElement) popupElement.style.display = 'none'; }, duration);
+        }
+
+        function triggerGlobalAlert(message, duration = 7000) { 
+            if (!globalAlertPanel) return;
+            let finalMessage = message;
+            if (message.includes("__DB_TARGET__")) finalMessage = message.replace(/__DB_TARGET__/g, dbExploitTarget || "UNKNOWN_DB");
+            if (message.includes("__TARGET_IP__")) finalMessage = message.replace(/__TARGET_IP__/g, fakeIP());
+            showTemporaryPopup(globalAlertPanel, finalMessage, duration, false);
+        }
+
+        function randomGlobalAlerts() { 
+            if (frameCount % rInt(800, 1800) === 0 && (!globalAlertPanel || globalAlertPanel.style.display === 'none')) { 
+                const alertMessages = [
+                    "!!! KERNEL INTEGRITY COMPROMISED [REBOOT IMMINENT] !!!", 
+                    "!!! SYSTEM BREACH LEVEL: SEVERE - CONTAINMENT PROTOCOLS ACTIVATED !!!",
+                    "!!! UNAUTHORIZED SUPERUSER ACCESS [IP: __TARGET_IP__ ] !!!",
+                    "!!! MASSIVE DATA EXFILTRATION DETECTED VIA __EXFIL_METHOD__ !!!",
+                    "!!! DATABASE COMPROMISE ATTEMPT ON: __DB_TARGET__ !!!"
+                ];
+                let message = rChoice(alertMessages);
+                message = message.replace(/__EXFIL_METHOD__/g, rChoice(commonWords).toUpperCase());
+                triggerGlobalAlert(message, rInt(5000,7500));
+            }
+        }
+        
+        // --- Persistent Info Panel Functions (Called once at init) ---
+        function displaySatellitePopup() {
+            const satName = `SATCOM_RELAY_${rChoice(["ALPHA","BRAVO","CHARLIE","DELTA","OMEGA"])}_${rHex(2)}`;
+            const content = `
+                <div>TARGET SATELLITE: ${satName}</div>
+                <div>CONNECTION: <span style="color:${rChoice(['#66FF66','#FFFF00'])}">${rChoice(["STABLE","NEGOTIATING","WEAK_SIGNAL"])}</span></div>
+                <div>UPLINK SPEED: ${rFloat(50,500).toFixed(1)} Mbps</div>
+                <div>DOWNLINK SPEED: ${rFloat(200,2000).toFixed(1)} Mbps</div>
+                <div>ENCRYPTION: ${rChoice(["AES-512-GCM","QUANTUM_QKD_STREAM","SERPENT_TWOFISH_CASCADE"])}</div>
+            `;
+            if(satelliteConnectionPopup) satelliteConnectionPopup.innerHTML = content; 
+        }
+
+        function displayNavyPlansPopup() {
+            const opName = `OPERATION_${rChoice(["TRIDENT_STRIKE","AEGIS_SHIELD","POSEIDON_REACH","SILENT_HUNTER","DEEP_SWEEP"])}`;
+            const content = `
+                <div>OPERATION NAME: ${opName}</div>
+                <div>TASK FORCE: TF-${rInt(10,99)} (${rChoice(["CARRIER_STRIKE_GROUP","AMPHIBIOUS_READY_GROUP"])})</div>
+                <div>REGION: ${rChoice(["PACIFIC_SECTOR_7","ATLANTIC_NORTH_QUADRANT","INDIAN_OCEAN_TRANSIT"])}</div>
+                <div>OBJECTIVES: ${rChoice(["DENY_ACCESS","ESTABLISH_SUPERIORITY","CONDUCT_RECON"])}</div>
+            `;
+            if(usNavyPlansPopup) usNavyPlansPopup.innerHTML = content;
+        }
+        
+        function displayMissionBriefPopup() {
+            const mission = `MISSION: ${rChoice(["INFILTRATE","EXTRACT","SABOTAGE","SURVEIL"])} ${rChoice(["DATA_SERVER_OMEGA","HOSTILE_AGENT_VIPER","WEAPONS_FACILITY_GAMMA"])}`;
+            const content = `
+                <div>${mission}</div>
+                <div>AGENT: ${rChoice(["SPECTRE","GHOST","VIPER"])}_${rHex(2)}</div>
+                <div>STATUS: <span style="color:${rChoice(['#81C784','#FFEE58'])}">${rChoice(["UNDERWAY","AWAITING_INTEL","TARGET_ACQUIRED"])}</span></div>
+                <div>SUCCESS PROB: ${rInt(40,95)}%</div>
+            `;
+            if(missionBriefPopup) missionBriefPopup.innerHTML = content;
+        }
+
+        function displayMissileArsenalPopup() {
+            let arsenalContent = "";
+            for(let i=0; i<rInt(2,3); i++) { 
+                arsenalContent += `<div>SILO ${String.fromCharCode(65+i)}-${rInt(1,9)}: ${rChoice(["ICBM","SLBM"])} | <span style="color:${rChoice(['#66FF66','#FFEE58'])}">${rChoice(["READY","STANDBY"])}</span></div>`;
+            }
+            arsenalContent += `<div>TARGET PKG: ${rChoice(["ALPHA","OMEGA","ZULU"])}</div>`;
+            if(missileArsenalPopup) missileArsenalPopup.innerHTML = arsenalContent;
+        }
+        
+        function displayNKoreaIntelPopup() {
+            const content = `
+                <div>ACTIVITY LVL: <span style="color:${rChoice(['#FFEB3B','#FF9800','#F44336'])}">${rChoice(["ELEVATED","HIGH","CRITICAL"])}</span></div>
+                <div>SAT IMAGERY: ${rChoice(["CONSTRUCTION","VEHICLE_MVMT","PROPAGANDA_PREP"])}</div>
+                <div>CYBER ACT: ${rChoice(["DDOS_ORIGIN_DPRK","SPEAR_PHISHING_DEFENSE"])}</div>
+                <div>ICBM TEST: ${rChoice(["FUELING_DETECTED","LAUNCHPAD_ACTIVE","NO_IMMINENT"])}</div>
+            `;
+            if(northKoreaIntelPopup) northKoreaIntelPopup.innerHTML = content;
+        }
+
+        function displayNuclearPlantStatusPopup() {
+            const plantName = `PLANT_${rChoice(["ZAP","CHERN","FUKU","TMI","KALIN"])}`;
+            const temp = rInt(250, 1200);
+            const radLevel = rFloat(0.05, 5.5);
+            let statusColor = "#66FF66"; 
+            if (temp > 800 || radLevel > 2.0) statusColor = "#FFEE58"; 
+            if (temp > 1000 || radLevel > 4.0) statusColor = "#FFB74D"; 
+            if (temp > 1150 || radLevel > 5.0) statusColor = "#FF5252"; 
+
+            const content = `
+                <div>FACILITY: ${plantName}</div>
+                <div>CORE TEMP: <span style="color:${statusColor};">${temp}°C</span></div>
+                <div>RAD LEVEL: <span style="color:${statusColor};">${radLevel.toFixed(2)} mSv/h</span></div>
+                <div>STATUS: <span style="color:${statusColor}; font-weight:bold;">${temp > 1100 || radLevel > 4.5 ? "CRITICAL" : temp > 900 || radLevel > 3.0 ? "WARNING" : "NOMINAL"}</span></div>
+            `;
+            if(nuclearPlantStatusPopup) nuclearPlantStatusPopup.innerHTML = content;
+        }
+
+        function displayStrategicNukesPopup() {
+            const content = `
+                <div>DEFCON: ${rInt(2,5)} (SIM)</div>
+                <div>GLOBAL ARSENAL: ${rInt(12000,13500)} WARHEADS (EST)</div> 
+                <div>DETONATIONS (24H): 0</div>
+                <div>HIGH ALERT: ${rChoice(["USA","RUSSIA","CHINA","NONE"])}</div>
+                <div>FIRST STRIKE PROB: <span style="color:#FF5252;">${rFloat(0.1,2.5).toFixed(1)}%</span></div>
+            `;
+            if(strategicNukesPopup) strategicNukesPopup.innerHTML = content;
+        }
+        
+        function displaySystemWarning() { 
+            const warnings = [
+                "UNSTABLE QUANTUM LINK TO NODE __IP__",
+                "HIGH ENERGY SIGNATURE NEAR __TARGET_SYSTEM__",
+                "FIREWALL BREACH ATTEMPT - SECTOR GAMMA",
+                `DECRYPTION MODULE TEMP: ${rInt(70,90)}C - COOLING AT 80%`,
+                "ANOMALOUS SATELLITE BEHAVIOR - SAT_NODE_BETA",
+                "AI PREDICTION MODEL DEVIATION > THRESHOLD."
+            ];
+            let warningMsg = rChoice(warnings);
+            warningMsg = warningMsg.replace(/__IP__/g, fakeIP())
+                                 .replace(/__TARGET_SYSTEM__/g, fakeDomain().toUpperCase());
+            if(systemWarningPanel) addLine(systemWarningPanel, warningMsg, false, false); 
+        }
+
+        function displayIntercept() { 
+            const intercepts = [
+                `ENC TX [AES-512]\nSRC: ${fakeIP()}\nDST: ${fakeIP()}\nFREQ: ${rFloat(10,30).toFixed(1)}GHz`,
+                `UPLINK DECODE SAT_GAMMA...\nSTR: -${rInt(40,70)}dBm\nKEY_XCHG?`,
+                `VOICE INTERCEPT (TRANS):\n"...pkg delivered...confirm exfil..."\nSRC: UNKNOWN TACNET`,
+            ];
+            if(interceptPanel) addLine(interceptPanel, `<pre>${rChoice(intercepts)}</pre>`, true, false); 
+        }
+
+
+        function triggerIncomingMissilesPopup(duration = 12000) { 
+            if (!globalAlertPanel || (temporaryPopups.some(p => p !== globalAlertPanel && p && p.style.display === 'block'))) return;
+            const missileCount = rInt(1,5);
+            const origin = rChoice(["NORTHERN_SECTOR","SUBMARINE_LAUNCH_PACIFIC","UNKNOWN_TRAJECTORY","EASTERN_HEMISPHERE_LAUNCH"]);
+            const eta = `${rInt(2,15)} MIN`;
+            const targets = ["CAPITAL_CITY_ALPHA", "STRATEGIC_COMMAND_ZULU", "NAVAL_BASE_OMEGA", "MULTIPLE_URBAN_CENTERS"];
+            const message = `!!! INCOMING MISSILE ALERT !!!\n${missileCount} HOSTILE PROJECTILE(S) DETECTED\nORIGIN: ${origin}\nESTIMATED TIME TO IMPACT: ${eta}\nPROJECTED TARGET(S): ${rChoice(targets)}\n!!! IMMEDIATE EVACUATION / COUNTERMEASURES ADVISED !!!`;
+            triggerGlobalAlert(message, duration); 
+        }
+        function randomIncomingMissilesPopup() { if (frameCount % rInt(2500, 5000) === 0) triggerIncomingMissilesPopup(); } 
+
+        // --- Program Console Logic ---
+        let currentCommand = "";
+        const consoleMaxHistory = 50;
+
+        function generateHackingCodeOutput(command) {
+            let output = `\n<span style="color:#76FF03;">Executing: ${command}</span>\n`;
+            const lines = rInt(3, 7);
+            for (let i = 0; i < lines; i++) {
+                const r = Math.random();
+                if (r < 0.3) output += `<span style="color:#80CBC4;">  // ${rChoice(commonWords)} ${rChoice(commonWords)}...</span>\n`;
+                else if (r < 0.7) output += `<span style="color:#4FC3F7;">  ${rChoice(codeKeywords)} ${rChoice(commonWords)} = ${rHex(rInt(2,8))};</span>\n`;
+                else output += `<span style="color:#FFD54F;">  ${rChoice(commonWords).toUpperCase()}_${rChoice(commonWords).toUpperCase()}(0x${rHex(4)});</span>\n`;
+            }
+            output += `<span style="color:#76FF03;">Operation ${rChoice(["SUCCESSFUL", "COMPLETED WITH ERRORS", "FAILED", "ABORTED"])}.</span>\n`;
+            return output;
+        }
+
+        function typeHackingCode(text, targetElement, index = 0) {
+            if (index < text.length) {
+                targetElement.innerHTML += text[index];
+                if(consoleOutputDisplay) consoleOutputDisplay.scrollTop = consoleOutputDisplay.scrollHeight;
+                setTimeout(() => typeHackingCode(text, targetElement, index + 1), rInt(5, 25));
+            }
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (earthScanState === 'zoomed') return; 
+
+            const key = event.key;
+            if (key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) { 
+                currentCommand += key;
+            } else if (key === 'Backspace') {
+                currentCommand = currentCommand.slice(0, -1);
+            } else if (key === 'Enter') {
+                if (currentCommand.trim() !== "") {
+                    if(consoleOutputDisplay) addLine(consoleOutputDisplay, `<span class="console-prompt">&gt;</span> ${currentCommand}`, true, false);
+                    const hackingOutput = generateHackingCodeOutput(currentCommand);
+                    const outputDiv = document.createElement('div');
+                    if(consoleOutputDisplay) consoleOutputDisplay.appendChild(outputDiv);
+                    typeHackingCode(hackingOutput, outputDiv); 
+                    currentCommand = "";
+                }
+            }
+            if(consoleInputDisplay) consoleInputDisplay.textContent = currentCommand;
+        });
+
+
+        // --- Main Loop ---
+        let lastLogUpdate = 0;
+        let lastDbUpdate = 0;
+        let lastDnsUpdate = 0;
+        let lastCryptoUpdate = 0;
+        let lastSurveillanceUpdate = 0;
+        let lastStatusUpdate = 0;
+        let lastAuxUpdate = 0;
+        let lastSystemWarningUpdate = 0; 
+        let lastInterceptUpdate = 0;   
+        let frameCount = 0; 
+
+        function mainLoop() {
+            const now = Date.now();
+            frameCount++;
+
+            animateEarth(); 
+
+            if (now - lastLogUpdate > rInt(700, 1800)) { updateGlobalLog(); lastLogUpdate = now; }
+            if (now - lastDbUpdate > 250) { updateDBExploit(); lastDbUpdate = now; } 
+            if (now - lastDnsUpdate > rInt(1200, 2800)) { updateDNSSpoofing(); lastDnsUpdate = now; }
+            if (now - lastCryptoUpdate > 800) { updateCryptoMining(); lastCryptoUpdate = now; }
+            if (now - lastSurveillanceUpdate > 1500) { updateSurveillanceFeed(); lastSurveillanceUpdate = now; }
+            if (now - lastStatusUpdate > rInt(1800, 3500)) { updateSystemStatus(); lastStatusUpdate = now; }
+            if (now - lastAuxUpdate > 1000) { updateAuxiliaryPanel(); lastAuxUpdate = now; }
+            
+            // Update persistent warning/intercept panels less frequently
+            if (now - lastSystemWarningUpdate > rInt(15000, 25000)) { displaySystemWarning(); lastSystemWarningUpdate = now; }
+            if (now - lastInterceptUpdate > rInt(18000, 30000)) { displayIntercept(); lastInterceptUpdate = now; }
+
+
+            randomGlobalAlerts(); 
+            randomIncomingMissilesPopup();
+
+
+            requestAnimationFrame(mainLoop);
+        }
+
+        // --- Initialization ---
+        initEarth();
+        if (!dbExploitTarget && dbExploitContent) { 
+             startDBExploit();
+        }
+
+        for(let i=0; i<3; i++) updateGlobalLog(); 
+        for(let i=0; i<2; i++) updateDNSSpoofing();
+        updateCryptoMining();
+        updateSurveillanceFeed();
+        updateSystemStatus();
+        updateAuxiliaryPanel();
+
+        // Initialize persistent "pop-up" panels (now just regular panels)
+        displaySatellitePopup();
+        displayNavyPlansPopup();
+        displayMissionBriefPopup();
+        displayMissileArsenalPopup();
+        displayNKoreaIntelPopup();
+        displayNuclearPlantStatusPopup();
+        displayStrategicNukesPopup();
+        displaySystemWarning(); 
+        displayIntercept();     
+        
+        mainLoop();
+    </script>
+</body>
+</html>
